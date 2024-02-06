@@ -1,12 +1,12 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { ApiError } from "./apiError";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
 
 const uploadOnCloudinary = async (localFilePath) => {
   try {
@@ -18,7 +18,7 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     // file has been uploaded successfully
     fs.unlinkSync(localFilePath); // remove the locally saved temp file as the upload got unsuccessful
-    return response;s
+    return response;
   } catch (error) {
     console.log(error);
     fs.unlinkSync(localFilePath); // remove the locally saved temp file as the upload got unsuccessful
@@ -34,4 +34,15 @@ const uploadOnCloudinary = async (localFilePath) => {
 //   }
 // );
 
-export { uploadOnCloudinary };
+const deleteFromCloudinary = async (url) => {
+  try {
+    if (!url) {
+      return ApiError(400, "Url is missing");
+    }
+    const urlParts = url.split("/");
+    const publicId = urlParts[urlParts.length - 1].split(".")[0];
+    return cloudinary.uploader.destroy(publicId);
+  } catch (error) {}
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };
