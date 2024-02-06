@@ -6,7 +6,7 @@ import {
   registerUser,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
-import { verifyJWTToken } from "../middlewares/auth.middlleware.js";
+import { verifyJWTToken } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
