@@ -35,14 +35,15 @@ const uploadOnCloudinary = async (localFilePath) => {
 // );
 
 const deleteFromCloudinary = async (url) => {
+  if (!url) {
+    throw new ApiError(400, "Url is missing");
+  }
   try {
-    if (!url) {
-      return ApiError(400, "Url is missing");
-    }
-    const urlParts = url.split("/");
-    const publicId = urlParts[urlParts.length - 1].split(".")[0];
-    return cloudinary.uploader.destroy(publicId);
-  } catch (error) {}
+    const publicId = url.split("/").pop().split(".")[0];
+    return await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    throw new ApiError(error.statusCode || 500, error.message);
+  }
 };
 
 export { uploadOnCloudinary, deleteFromCloudinary };
