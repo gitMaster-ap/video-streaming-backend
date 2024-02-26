@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 
 // In JavaScript, the underscore (_) is often used as a convention to indicate that the parameter is not going to be used within the function body.
-export const verifyJWTToken = asyncHandler(async (req, _, next) => {
+export const verifyJWTToken = asyncHandler(async (req, res, next) => {
   try {
     const token =
       req.cookies?.accessToken ||
@@ -24,6 +24,13 @@ export const verifyJWTToken = asyncHandler(async (req, _, next) => {
     req.user = user;
     next();
   } catch (error) {
-    throw new ApiError(401, error?.message || "Invalid access token");
+    res
+      .status(error.statusCode || 500)
+      .json(
+        new ApiError(
+          error.statusCode || 500,
+          error.message || "Something went wrong while fetching user channel"
+        )
+      );
   }
 });
