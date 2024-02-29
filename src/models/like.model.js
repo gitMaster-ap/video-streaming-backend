@@ -20,6 +20,11 @@ const likeSchema = new Schema(
     },
   },
   {
+    toJSON: {
+      transform(doc, ret) {
+        delete ret.__v;
+      },
+    },
     timestamps: true,
   }
 );

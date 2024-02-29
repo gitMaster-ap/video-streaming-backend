@@ -21,7 +21,14 @@ const playListSchema = new Schema(
       ref: "User",
     },
   },
-  { timestamps: true }
+  {
+    toJSON: {
+      transform(doc, ret) {
+        delete ret.__v;
+      },
+    },
+    timestamps: true,
+  }
 );
 
 export const Playlist = mongoose.model("Playlist", playListSchema);
