@@ -29,7 +29,7 @@ export const verifyJWTToken = asyncHandler(async (req, res, next) => {
       .json(
         new ApiError(
           error.statusCode || 500,
-          error.message || "Something went wrong while fetching user channel"
+          "Invalid access token, please login again"
         )
       );
   }
