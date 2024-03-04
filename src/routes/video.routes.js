@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   getAllVideos,
   getVideoById,
-  publishVideo,
+  publishVideoOnCloudinary,
   updateVideoDetails,
 } from "../controllers/video.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -16,14 +16,14 @@ router.route("/publishVideo").post(
   upload.fields([
     {
       name: "videoFile",
-      maxCount: 10,
+      maxCount: 1,
     },
     {
       name: "thumbnail",
-      maxCount: 10,
+      maxCount: 1,
     },
   ]),
-  publishVideo
+  publishVideoOnCloudinary
 );
 
 router.route("/getVideoById").get(getVideoById);
@@ -31,11 +31,11 @@ router.route("/updateVideoDetails").post(
   upload.fields([
     {
       name: "videoFile",
-      maxCount: 10,
+      maxCount: 1,
     },
     {
       name: "thumbnail",
-      maxCount: 10,
+      maxCount: 1,
     },
   ]),
   updateVideoDetails
