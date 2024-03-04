@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  deleteVideo,
   getAllVideos,
   getVideoById,
   publishVideoOnCloudinary,
@@ -40,12 +41,6 @@ router.route("/updateVideoDetails").post(
   ]),
   updateVideoDetails
 );
-// router
-//   .route("/:videoId")
-//   .get(getVideoById)
-//   .delete(deleteVideo)
-//   .patch(upload.single("thumbnail"), updateVideo);
-
-// router.route("/toggle/publish/:videoId").patch(togglePublishStatus);
+router.route("/deleteVideo").delete(deleteVideo);
 
 export default router;
