@@ -8,8 +8,10 @@ import {
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
 import { Playlist } from "../models/playlist.model.js";
+import { uploadOnS3 } from "../utils/s3BucketUpload.js";
+import fs from "fs";
 
-const publishVideo = asyncHandler(async (req, res) => {
+const publishVideoOnCloudinary = asyncHandler(async (req, res) => {
   try {
     const { title, description, isPublished } = req.body;
 
@@ -52,8 +54,73 @@ const publishVideo = asyncHandler(async (req, res) => {
       .status(201)
       .json(new ApiResponse(201, video, "Video uploaded successfully!!"));
   } catch (error) {
-    if (req.files?.videoFile?.[0]) {
-      fs.unlinkSync(req.files?.videoFile?.[0]?.path); // Unlink the video file only if the upload fails
+    if (fs.existsSync(req.files?.videoFile?.[0]?.path)) {
+      fs.unlinkSync(req.files?.videoFile?.[0]?.path);
+    }
+    if (fs.existsSync(req.files?.thumbnail?.[0]?.path)) {
+      fs.unlinkSync(req.files?.thumbnail?.[0]?.path);
+    }
+    res
+      .status(error.statusCode || 500)
+      .json(
+        new ApiError(
+          error.statusCode || 500,
+          error.message || "Something went wrong while uploading video"
+        )
+      );
+  }
+});
+
+const publishVideoOnS3 = asyncHandler(async (req, res) => {
+  try {
+    const { title, description, isPublished } = req.body;
+    if (!title?.trim()) {
+      throw new ApiError(400, "Title content is required");
+    }
+    if (!description?.trim()) {
+      throw new ApiError(400, "Description content is required");
+    }
+
+    const videoLocalPath = req.files?.videoFile?.[0]?.path;
+    const videoThumbnail = req.files?.thumbnail?.[0]?.path;
+
+    if (!videoLocalPath) {
+      throw new ApiError(400, "Video file is required");
+    }
+    if (!videoThumbnail) {
+      throw new ApiError(400, "Thumbnail file is required");
+    }
+    const [uploadVideo, uploadThumbnail] = await Promise.all([
+      uploadOnS3({
+        file: videoLocalPath,
+        fileType: req.files?.videoFile[0].mimetype,
+      }),
+      uploadOnS3({
+        file: videoThumbnail,
+        fileType: req.files?.thumbnail[0].mimetype,
+      }),
+    ]);
+    if (!uploadVideo || !uploadThumbnail) {
+      throw new ApiError(500, "Something went wrong while uploading video");
+    }
+    const video = await Video.create({
+      videoFile: uploadVideo?.url,
+      thumbnail: uploadThumbnail?.url,
+      title,
+      description,
+      isPublished,
+      owner: req.user._id,
+      duration: null,
+    });
+    return res
+      .status(201)
+      .json(new ApiResponse(201, video, "Video uploaded successfully!!"));
+  } catch (error) {
+    if (fs.existsSync(req.files?.videoFile?.[0]?.path)) {
+      fs.unlinkSync(req.files?.videoFile?.[0]?.path);
+    }
+    if (fs.existsSync(req.files?.thumbnail?.[0]?.path)) {
+      fs.unlinkSync(req.files?.thumbnail?.[0]?.path);
     }
     res
       .status(error.statusCode || 500)
@@ -263,7 +330,8 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
 export {
   getAllVideos,
-  publishVideo,
+  publishVideoOnCloudinary,
+  publishVideoOnS3,
   getVideoById,
   updateVideoDetails,
   deleteVideo,
