@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
+  decryptVideo,
   deleteVideo,
+  encryptVideo,
   getAllVideos,
   getVideoById,
   publishVideoOnCloudinary,
@@ -42,5 +44,24 @@ router.route("/updateVideoDetails").post(
   updateVideoDetails
 );
 router.route("/deleteVideo").delete(deleteVideo);
+
+router.route("/encryptVideo").post(
+  upload.fields([
+    {
+      name: "videoFile",
+      maxCount: 100,
+    },
+  ]),
+  encryptVideo
+);
+router.route("/decryptVideo").post(
+  upload.fields([
+    {
+      name: "videoFile",
+      maxCount: 100,
+    },
+  ]),
+  decryptVideo
+);
 
 export default router;

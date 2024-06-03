@@ -10,6 +10,10 @@ import {
 import { Playlist } from "../models/playlist.model.js";
 import { uploadOnS3 } from "../utils/s3BucketUpload.js";
 import fs from "fs";
+import { decrypt, encrypt, removeEncryption } from "../utils/encryption.js";
+import path from "path";
+
+const __dirname = path.resolve();
 
 const publishVideoOnCloudinary = asyncHandler(async (req, res) => {
   try {
@@ -328,6 +332,89 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Video Deleted Successfully", {}));
 });
 
+const encryptVideo = asyncHandler(async (req, res) => {
+  const userId = req.user._id.toString();
+  try {
+    const { password } = req.body;
+    const videoFile = req.files?.videoFile?.[0];
+
+    if (!videoFile) {
+      return res.status(400).send("No video file uploaded");
+    }
+
+    const buffer = await fs.promises.readFile(videoFile.path);
+    const { encryptedData, iv } = encrypt(buffer, password, userId);
+
+    const encryptedFilePath = path.resolve(
+      __dirname,
+      "public",
+      `encrypted_${videoFile.filename + "-" + iv}`
+    );
+
+    await fs.promises.writeFile(encryptedFilePath, encryptedData);
+
+    await fs.promises.unlink(videoFile.path);
+
+    const encryptedFileName = `encrypted_${videoFile.filename}-${iv}`;
+    const downloadUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/public/${encryptedFileName}`;
+
+    return res.status(200).json(
+      new ApiResponse(200, "Video Encrypted", {
+        filename: encryptedFileName,
+        downloadUrl,
+      })
+    );
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json(new ApiError(error.statusCode || 500, error.message));
+  }
+});
+
+const decryptVideo = asyncHandler(async (req, res) => {
+  try {
+    const { password, iv } = req.body;
+    const encryptedFile = req.files?.videoFile?.[0];
+
+    if (!encryptedFile) {
+      return res.status(400).send("No encrypted file uploaded");
+    }
+
+    const encryptedData = fs.readFileSync(encryptedFile.path, "utf8");
+    const salt = req.user._id.toString(); // Assuming the salt is the user ID
+
+    const decryptedData = decrypt(encryptedData, password, salt, iv);
+    const decryptFilePath = removeEncryption(encryptedFile.filename);
+
+    const decryptedFilePath = path.resolve(
+      __dirname,
+      "public",
+      `${decryptFilePath}`
+    );
+
+    await fs.promises.writeFile(decryptedFilePath, decryptedData);
+
+    await fs.promises.unlink(encryptedFile.path);
+
+    const decryptFileName = `${decryptFilePath}`;
+    const downloadUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/public/${decryptFileName}`;
+
+    return res.status(200).json(
+      new ApiResponse(200, "Video Decrypted", {
+        filename: decryptFileName,
+        downloadUrl,
+      })
+    );
+  } catch (error) {
+    res
+      .status(error.statusCode || 500)
+      .json(new ApiError(error.statusCode || 500, error.message));
+  }
+});
 export {
   getAllVideos,
   publishVideoOnCloudinary,
@@ -335,4 +422,6 @@ export {
   getVideoById,
   updateVideoDetails,
   deleteVideo,
+  encryptVideo,
+  decryptVideo,
 };
