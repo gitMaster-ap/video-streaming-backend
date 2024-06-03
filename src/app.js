@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import downloadFile from "./middlewares/downloadFile.middleware.js";
 
 const app = express();
 
@@ -10,6 +11,7 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "150mb" }));
 app.use(express.static("/public/tmp"));
 app.use(cookieParser());
+app.use("/public/:filename", downloadFile);
 
 // routes import
 import userRoutes from "./routes/user.routes.js";
